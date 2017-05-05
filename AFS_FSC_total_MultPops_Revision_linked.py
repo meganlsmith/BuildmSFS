@@ -2,9 +2,9 @@
 
 """
 This script will build a multidimensional allele frequency spectrum from an input 
-matrix of SNPs. For use for as few as three and as many as ten populations. SNP matrix is 
+matrix of SNPs using all SNPs. For use for as few as three and as many as ten populations. SNP matrix is 
 filtered to all bi-allelic SNPs, that equal or surpass the population 
-thresholds. The script will sample a single SNP per locus, and if a threshold that requires
+thresholds. If a threshold that requires
 subsampling is used, the user can replicate the observed AFS N times 
 due to the subsampling of alleles per SNP. Output is an observed allele 
 frequency spectrum for use in fastsimcoal2.
