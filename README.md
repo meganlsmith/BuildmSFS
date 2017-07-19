@@ -37,15 +37,21 @@ As input, both scripts require two things:
     'MLS_1_a' and 'MLS_1_b'. You need a line for both of these names in your TRAITS file.
 
 Usage: 
+
 The required arguments are as follows, in the specified order
+
 script,Traits,file,Threshold,locus_file,nreps = argv #arguments the user must supply
 
 file is the input descripted in (1) above.
+
 The locus_file is the .loci output from pyRAD.
+
 The Threshold is the user-specified percent of individuals that must be sequenced at a locus for that locus to be retained.
+
 nreps is the number of replicated downsampled SFS the user wants to create.
 
 example usage:
+
 python AFS_FSC_total_MultPops_Done.py traits.txt SNP_infile.txt 50 Monomorphics.txt/species.loci 10 
 
 Output: 
