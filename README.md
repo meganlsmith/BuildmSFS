@@ -2,7 +2,7 @@
 Build the multidimensional SFS from pyrad output files
 
 Introduction:
-These scripts are a modification of Jordan Satler's (https://github.com/jordansatler) downsampling script that works for three to ten populations. There are two versions: 
+These scripts are modifications of Jordan Satler's (https://github.com/jordansatler) downsampling script that work for three to ten populations. There are two versions: 
 
 Version 1. AFS_FSC_total_MultPops_Revision.py
 
