@@ -64,5 +64,7 @@ Please cite: Smith ML, Ruffley MR, Espíndola AE, Tank DC, Sullivan J, Carstens 
 Frequently asked questions: 
 
 1. I'm getting an error that one of my keys is not found (e.g. KeyError: ‘11579_a’). 
+
 First, check that you have a line for each allele in your traits file. 
+
 Second, make sure the line endings are in Unicode (UTF-8). Some endings may cause an error.
