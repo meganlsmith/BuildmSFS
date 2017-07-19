@@ -59,7 +59,7 @@ The script will create #nreps downsampled SFS ready for use in FSC2.
 
 If you have any questions or comments, please email me at megansmth67@gmail.com.
 
-Please cite: Smith ML, Ruffley MR, Espíndola AE, Tank DC, Sullivan J, Carstens BC. Demographic model selection using random forests and the site frequency spectrum. Molecular Ecology.
+Please refer to: Smith ML, Ruffley MR, Espíndola AE, Tank DC, Sullivan J, Carstens BC. Demographic model selection using random forests and the site frequency spectrum. Molecular Ecology.
 
 Frequently asked questions: 
 
