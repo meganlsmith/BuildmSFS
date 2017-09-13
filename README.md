@@ -2,7 +2,7 @@
 Build the multidimensional SFS from pyrad output files
 
 Introduction:
-These scripts are modifications of Jordan Satler's (https://github.com/jordansatler) downsampling script that work for three to ten populations. There are two versions: 
+These scripts are modifications of Jordan Satler's (https://github.com/jordansatler) downsampling script that work for three to ten populations. There are two versions (both in python 2.7): 
 
 Version 1. AFS_FSC_total_MultPops_Revision.py
 
@@ -68,3 +68,7 @@ Frequently asked questions:
 First, check that you have a line for each allele in your traits file. 
 
 Second, make sure the line endings are in Unicode (UTF-8). Some endings may cause an error.
+
+2. I'm getting the error "No module named sortedcontainers"
+
+If you use pip to manage installations, run "pip install sortedcontainers." Sorted containers is also available via conda.
