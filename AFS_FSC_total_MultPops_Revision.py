@@ -650,41 +650,39 @@ def write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorp
         log.write('\t')
         log.write('Total SNPs Used: %s' % TotalBi_SNPs_used)
         log.write('\n')
+        print TotalBi_SNPs_used
         log.write('Total BP: %s' % TotalBP)
         log.write('\t')
         AdjustedBP = int(Monomorphics) + int(TotalBi_SNPs_used)
         log.write('Adjusted BP: %s' % (AdjustedBP))
 
-def print_AFS(AFS_Full_Mono, Pops, Pop_counts):
-    print "Writing the AFS..."
-    for rep in range(0,nreps):
-        with open("Rep" + str(rep) + "_MSFS.obs", 'w') as f:
-#            print Pops
-#            print Pop_counts
-            write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorphics)
-            with open ("Rep" + str(rep) + "_MSFS.obs", 'a') as f: 
-                f.write('1 observations. No. of demes and sample sizes are on next line')
-                f.write('\n')
-                f.write(str(len(Pop_counts)))
+for rep in range(0,nreps):
+    Pops, Pop_counts = pop_association(Traits)
+    Thresholds = Get_Thresholds(Threshold,Pops,Pop_counts)
+    Bi_Thr, indivs, TotalSNPs, length_2 = Biallelic_SNPs(file,Pops,Pop_counts)
+    Unlink = subsample(Bi_Thr,indivs,TotalSNPs,length_2)
+    Downsampled = DownSample(Unlink,Bi_Thr, indivs, Pop_counts,Thresholds)
+    AFS_Empty = Empty_AFS(Pops,Pop_counts)
+    AFS_Full,TotalBi_SNPs_used = create_AFS(Bi_Thr, indivs, TotalSNPs, length_2, Unlink, AFS_Empty,Pop_counts, Thresholds,Downsampled)
+    Count, Loci_count = totalbp(locus_file)
+    Monomorphics,TotalBP, Loci_count = get_mono_cell(locus_file,Count,Loci_count,TotalBi_SNPs_used, TotalSNPs)
+    AFS_Full_Mono = Add_MONOmorphs(locus_file,Monomorphics, AFS_Full)
+    with open("Rep" + str(rep) + "_MSFS.obs", 'w') as f:
+        print Pops
+        print Pop_counts
+        write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorphics)
+        with open ("Rep" + str(rep) + "_MSFS.obs", 'a') as f: 
+            f.write('1 observations. No. of demes and sample sizes are on next line')
+            f.write('\n')
+            f.write(str(len(Pop_counts)))
+            f.write('\t')
+            for i in range(0,len(Pop_counts)):
+                key = '%s' % Pop_counts.iloc[i]
+                f.write(str(Pop_counts[key]))
                 f.write('\t')
-                for i in range(0,len(Pop_counts)):
-                    key = '%s' % Pop_counts.iloc[i]
-                    f.write(str(Pop_counts[key]))
-                    f.write('\t')
-                f.write('\n')
-            for bin in AFS_Full_Mono:
-                with open("Rep" + str(rep) + "_MSFS.obs", 'a') as f:
-                    f.write(str(AFS_Full_Mono[bin]))
-                    f.write('\t')
+            f.write('\n')
+        for bin in AFS_Full_Mono:
+            with open("Rep" + str(rep) + "_MSFS.obs", 'a') as f:
+                f.write(str(AFS_Full_Mono[bin]))
+                f.write('\t')
 
-Pops, Pop_counts = pop_association(Traits)
-Thresholds = Get_Thresholds(Threshold,Pops,Pop_counts)
-Bi_Thr, indivs, TotalSNPs, length_2 = Biallelic_SNPs(file,Pops,Pop_counts)
-Unlink = subsample(Bi_Thr,indivs,TotalSNPs,length_2)
-Downsampled = DownSample(Unlink,Bi_Thr, indivs, Pop_counts,Thresholds)
-AFS_Empty = Empty_AFS(Pops,Pop_counts)
-AFS_Full,TotalBi_SNPs_used = create_AFS(Bi_Thr, indivs, TotalSNPs, length_2, Unlink, AFS_Empty,Pop_counts, Thresholds,Downsampled)
-Count, Loci_count = totalbp(locus_file)
-Monomorphics,TotalBP, Loci_count = get_mono_cell(locus_file,Count,Loci_count,TotalBi_SNPs_used, TotalSNPs)
-AFS_Full_Mono = Add_MONOmorphs(locus_file,Monomorphics, AFS_Full)
-print_AFS(AFS_Full_Mono, Pops, Pop_counts)
