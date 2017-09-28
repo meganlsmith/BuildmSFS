@@ -668,8 +668,8 @@ for rep in range(0,nreps):
     Monomorphics,TotalBP, Loci_count = get_mono_cell(locus_file,Count,Loci_count,TotalBi_SNPs_used, TotalSNPs)
     AFS_Full_Mono = Add_MONOmorphs(locus_file,Monomorphics, AFS_Full)
     with open("Rep" + str(rep) + "_MSFS.obs", 'w') as f:
-        print Pops
-        print Pop_counts
+#        print Pops
+#        print Pop_counts
         write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorphics)
         with open ("Rep" + str(rep) + "_MSFS.obs", 'a') as f: 
             f.write('1 observations. No. of demes and sample sizes are on next line')
