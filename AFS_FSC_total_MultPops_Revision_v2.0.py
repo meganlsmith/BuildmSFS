@@ -566,7 +566,7 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
  #               print "hells yeah"
                 topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
                 if topopulate != '0_0_0':
-                     print "hells yah"
+#                     print "hells yah"
                      AFS_Full[topopulate]+=0.5
                      thehalfSNPs+=0.5
 #                     print 'adding 1/2 to %s' % topopulate
