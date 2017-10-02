@@ -409,6 +409,7 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
 #                print x
                 exec(foo+"=%s" % x)
                 index+=1
+                print store_1
 #            print len(Pop_counts)
             if len(Pop_counts)==3:
 #                print "hells yeah"
@@ -474,6 +475,7 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
         total = sum(Allele_Count_2.values())
         if int(common_allele) == 0.5 * total: 
             store = list(Allele_Count_2.elements())
+#            print store
             for item in store:
                 try:
                     thefirstsnp
@@ -491,6 +493,8 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
 #                            print thesecondsnp
                         else:
                             thesecondsnp=thesecondsnp
+            print thefirstsnp
+            print thesecondsnp
             for allele in range(1,len(snp)): # if this allele has a frequency > 1/2, loop through the alleles and
 #                print '%s in %s' % (snp[allele],popper)
                 if snp[allele] == thefirstsnp: # check that the allele is the minor allele
@@ -507,10 +511,11 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
             for key in Pop_counts:
                 foo = "store_%s" % str(index)
 #                print foo
-                x = '%s' % str(PopKeepCount_2[key]/2)
+                x = '%s' % str(PopKeepCount_2[key])
 #                print '%s in %s' % (x, foo)
                 exec(foo+"=%s" % x)
                 index+=1
+                print store_1
             if len(Pop_counts)==3:
                 topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
                 if topopulate != '0_0_0':
@@ -557,7 +562,7 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
             for key in Pop_counts:
                 foo = "store_%s" % str(index)
 #                print foo
-                x = '%s' % str(PopKeepCount_3[key]/2)
+                x = '%s' % str(PopKeepCount_3[key])
                 exec(foo+"=%s" % x)
                 index+=1
 #                print '%s in %s' % (x, foo)
