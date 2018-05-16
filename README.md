@@ -4,7 +4,7 @@ Build the multidimensional SFS from pyrad output files
 Introduction:
 These scripts are modifications of Jordan Satler's (https://github.com/jordansatler) downsampling script that work for three to ten populations. There are two versions (both in python 2.7): 
 
-Version 1. AFS_FSC_total_MultPops_Revision.py
+Version 1. AFS_FSC_total_MultPops_Revision_v.3.0.py
 
 This script will build a multidimensional allele frequency spectrum from an input 
 matrix of SNPs. For use for as few as three and as many as ten populations. SNP matrix is 
@@ -12,7 +12,7 @@ filtered to all bi-allelic SNPs, that equal or surpass the population
 thresholds. The script will sample a single SNP per locus, and if a threshold that requires
 subsampling is used, the user can replicate the observed AFS N times 
 due to the subsampling of alleles per SNP. Output is an observed allele 
-frequency spectrum for use in fastsimcoal2.
+frequency spectrum for use in fastsimcoal2. Version 3 takes an additional argument that indicates whether or not the monomorphic cell should be populated, and is the preferred, up-to-date version. Please use this version only after May 2018.
 
 Version 2. AFS_FSC_total_MultPops_Revision_linked.py
 
