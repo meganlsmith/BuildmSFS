@@ -52,7 +52,7 @@ nreps is the number of replicated downsampled SFS the user wants to create.
 
 example usage:
 
-python AFS_FSC_total_MultPops_Done.py traits.txt SNP_infile.txt 50 Monomorphics.txt/species.loci 10 
+python AFS_FSC_total_MultPops_Revision_v.3.0.py traits.txt SNP_infile.txt 50 Monomorphics.txt/species.loci 10 False
 
 Output: 
 The script will create #nreps downsampled SFS ready for use in FSC2.
