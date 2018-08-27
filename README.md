@@ -40,7 +40,7 @@ Usage:
 
 The required arguments are as follows, in the specified order
 
-script,Traits,file,Threshold,locus_file,nreps, Monomorphic = argv #arguments the user must supply
+script,Traits,file,Threshold,locus_file,nreps, popmonomorphic = argv #arguments the user must supply
 
 file is the input descripted in (1) above.
 
