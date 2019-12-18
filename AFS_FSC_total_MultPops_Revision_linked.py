@@ -661,11 +661,11 @@ def totalbp(locus_file):
                     if 'A' or 'T' or 'C' or 'G' or 'N' or 'M' or 'R' or 'W' or 'S' or 'Y' or 'K' or 'V' or 'H' or 'B' or 'D' in line:
                         line = line.strip().split()
                         #6 takes into account RE site
-                        print line
+                        #print line
                         Count += len(line[1])+6
                         Loci_count += 1
                         start = False
-    print Count, Loci_count  
+    #print Count, Loci_count  
     return Count, Loci_count
 
 def get_mono_cell(locus_file,Count,Loci_count,TotalBi_SNPs_used, TotalSNPs):
