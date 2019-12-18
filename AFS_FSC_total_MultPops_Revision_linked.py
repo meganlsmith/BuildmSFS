@@ -2,9 +2,9 @@
 
 """
 This script will build a multidimensional allele frequency spectrum from an input 
-matrix of SNPs using all SNPs. For use for as few as three and as many as ten populations. SNP matrix is 
+matrix of SNPs. For use for as few as three and as many as ten populations. SNP matrix is 
 filtered to all bi-allelic SNPs, that equal or surpass the population 
-thresholds. If a threshold that requires
+thresholds. The script will sample a single SNP per locus, and if a threshold that requires
 subsampling is used, the user can replicate the observed AFS N times 
 due to the subsampling of alleles per SNP. Output is an observed allele 
 frequency spectrum for use in fastsimcoal2.
@@ -12,7 +12,7 @@ frequency spectrum for use in fastsimcoal2.
 For use with pyRAD  output.
                                                      
 python AFS_FSC_total_MultPops_Done.py traits.txt SNP_infile.txt 
-       Threshold Monomorphics.txt/species.loci Replicate 
+       Threshold Monomorphics.txt/species.loci Replicate True
 
 """
 
@@ -31,10 +31,12 @@ from operator import itemgetter
 import heapq
 import collections
 
-script,Traits,file,Threshold,locus_file,nreps = argv #arguments the user must supply
+script,Traits,file,Threshold,locus_file,nreps, popmonomorphic = argv #arguments the user must supply
 
 Threshold=int(Threshold) # make sure threshold is an integer
 nreps=int(nreps) # make sure nreps is an integer
+#print Threshold
+#print nreps
 
 def pop_association(Traits):
     """Sets the individuals to their respective populations. 
@@ -51,7 +53,10 @@ def pop_association(Traits):
                 Pop_counts[line[1]] += 1 # if it is, increase the count of alleles for that population
             else: # if it isn't
                 Pop_counts[line[1]] = 1 # set the count equal to one
+#        print Pops, Pop_counts
         return Pops, Pop_counts # return both of these dictionaries for use in other functions
+
+#Pops, Pop_counts = pop_association(Traits)
 
 def Get_Thresholds(Threshold,Pops,Pop_counts):
     """Get your thresholds organized"""
@@ -65,15 +70,22 @@ def Get_Thresholds(Threshold,Pops,Pop_counts):
         t = float(Threshold)/100 # convert threshold to proportion
         value = int(call * t) # calculate number of alleles needed for the population
         Thresholds[keys_thresh].append(value) # append value to proper dictionary key
+#    print Thresholds
     return Thresholds
+#Thresholds = Get_Thresholds(Threshold, Pops, Pop_counts)
 
+#
 def createpopcounts(Pops,Pop_counts):
+    """This creates a dictionary with populations as keys for counting up to the thresholds."""
     CheckThresholds=Counter()
     for popid in range(0,len(Pop_counts)):
         Keyword = '%s_thresh' % Pop_counts.iloc[popid]
         CheckThresholds[Keyword] += 0
+#    print CheckThresholds
     return CheckThresholds
+#createpopcounts(Pops,Pop_counts)
 
+#
 def Biallelic_SNPs(file,Pops,Pop_counts):
 #    """Filter SNP matrix and retain only bi-allelic SNPs that are
 #       equal to or above both population thresholds."""
@@ -83,13 +95,14 @@ def Biallelic_SNPs(file,Pops,Pop_counts):
     Data = zip(*RawSNPs) # make infile iterable
     indivs = Data[0] # assign values from column 1 to be names of individuals
     columns = Data[1:] # assign other column values to variable columns
-#    #List of the unique polymorphic loci.
+#    print columns
+##    #List of the unique polymorphic loci.
     PolyLoci = [] # initialize list to hold polymorphic loci
-#
-#    #Alleles allowed.
+##
+##    #Alleles allowed.
     allowed = ['A','C','G','T'] # specify what characters are allowed as alleles
-#
-#    #List of bi-allelic SNPs that meet both population thresholds.
+##
+##    #List of bi-allelic SNPs that meet both population thresholds.
     Bi_Thr = [] # initialize list to hold SNPs that meet population thresholds and are biallelic
     keep = 0
     dontkeep = 0
@@ -108,7 +121,7 @@ def Biallelic_SNPs(file,Pops,Pop_counts):
                 popid=  Pops[indivs[allele]] # get population
                 counterkey = '%s_thresh' % popid # get string to update count
                 CheckThresholds.update([counterkey]) # update count for correct population 
-        if len(Alleles_set) == 2:
+        if len(Alleles_set) == 2: ## if the allele is biallelic
             for popid in range(0,len(Pop_counts)): # loop Through the list of populations and make keys with counts of zero for each population
                 population= Pop_counts.iloc[popid]
                 string = '%s_thresh' % population
@@ -124,10 +137,12 @@ def Biallelic_SNPs(file,Pops,Pop_counts):
         elif letscheck < len(Pop_counts): 
             dontkeep+=1
         else:
-            print 'something is fucked up.'
+            print 'something is not working.'
     length = len(columns)
     length_2 = len(PolyLoci)
     return Bi_Thr, indivs, length, length_2
+
+#Bi_Thr, indivs, length, length_2 = Biallelic_SNPs(file,Pops,Pop_counts)
 
 def subsample(Bi_Thr,indivs,length,length_2):
     """Randomly subsample a single linked SNP."""
@@ -182,6 +197,9 @@ def subsample(Bi_Thr,indivs,length,length_2):
                 Unlink.append(Single) # add this SNP to the Unlink list
     return Unlink
 
+#Unlink = subsample(Bi_Thr,indivs,length,length_2)
+#print Unlink
+#
 def DownSample(Unlink,Bi_Thr, indivs, Pop_counts,Thresholds):
     """Downsample SNPs for which we have more alleles than we need to meet the population thresholds."""
     print "Downsampling SNPs..."
@@ -217,7 +235,7 @@ def DownSample(Unlink,Bi_Thr, indivs, Pop_counts,Thresholds):
                     allele = allele[0] + 1  # add one so we don't try to sample an allele from the locus line
                     if Pops[indivs[allele]] == popper: # if the allele belongs to the correct population
                         if snp[allele] in Allowed: # if the snp[allele] is in the list of allowed characters
-                            if indivs[allele] not in Downsampled[key]: # if the individual is in the correct population
+                            if indivs[allele] not in Downsampled[key]: # if the individual is not already sampled
                                 Downsampled[key].append(indivs[allele]) # add it to alleles to be sampled for the population
 #                                print 'added it to %s' % (popper)
                                 counter+=1 # use the counter to keep track of how many alleles you've sampled from a given population. 
@@ -225,7 +243,10 @@ def DownSample(Unlink,Bi_Thr, indivs, Pop_counts,Thresholds):
 #        print i, Downsampled[i], len(Downsampled[i])
 #        print '\n\n\n'
     return Downsampled
-
+#Downsampled = DownSample(Unlink,Bi_Thr, indivs, Pop_counts,Thresholds)
+#print len(Downsampled)
+#print Downsampled
+#
 def Empty_AFS(Pops,Pop_counts):
     print "Creating an empty dictionary for storing the AFS..."
     AFS_Empty = OrderedDict()
@@ -248,6 +269,13 @@ def Empty_AFS(Pops,Pop_counts):
 #                    print bin
                     AFS_Empty.update({bin:0})
 #                   AFS_Empty[bin]+=1
+    if npops==2:
+        for q in range(Max_1+1):
+            for r in range(Max_2+1):
+                bin = '%r_%r' % (q,r)
+#               print bin
+                AFS_Empty.update({bin:0})
+#               AFS_Empty[bin]+=1
     if npops==4:
         for q in range(Max_1+1):
             for r in range(Max_2+1):
@@ -336,6 +364,9 @@ def Empty_AFS(Pops,Pop_counts):
 
 #    print len(AFS_Empty)
     return AFS_Empty
+#
+#AFS_Empty = Empty_AFS(Pops,Pop_counts)
+#print AFS_Empty
 
 def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, Thresholds,Downsampled):
     """Count the minor allele in each population 
@@ -344,23 +375,32 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
     AFS_Full = AFS_Empty
 #    print len(AFS_Full)
     Total_Bi_SNPs_used = 0 # initiate counter
-    
+    thehalfSNPs = 0
     Allowed = ['A', 'C', 'G', 'T']
     for snp in Unlink: # loop through snps (columns) in the unlinked group of SNPS
 #        print '\n\n\n'
 #        print 'results from %r:' % snp[0]
         Allele_Count = Counter() # initialize counter to determine major allele
         PopKeepCount = Counter() # initialize counter to count alleles in different bins
+        PopKeepCount_2 = Counter() # initialize counter to count alleles in different bins
+        PopKeepCount_3 = Counter() # initialize counter to count alleles in different bins
         for popid in range(0,len(Pop_counts)): # loop Through the list of populations and make keys with counts of zero for each population
-            PopKeepCount[Pop_counts.iloc[popid]] += 0
+            PopKeepCount[Pop_counts.iloc[popid]] == 0
+            PopKeepCount_2[Pop_counts.iloc[popid]] == 0
+            PopKeepCount_3[Pop_counts.iloc[popid]] == 0
         for allele in range(1,len(snp)): # then loop through the alleles 
             if indivs[allele] in Downsampled[snp[0]]:
                 if snp[allele] in Allowed:
-                    Allele_Count.update(snp[allele])  # update the SNP count
+                    Allele_Count.update(snp[allele])  # update the SNP count'
+                else:
+                    print "that's not good"
+        #print Allele_Count
         common_allele = Allele_Count.most_common(1)[0][1] # how many occurrences of the most common allele.
         value = Allele_Count.most_common(1)[0][0] # what is the most common allele
+#        print(Allele_Count)
         total = sum(Allele_Count.values()) # how many alleles are there
         if int(common_allele) > 0.5 * total:  # is there a common allele
+#            print "cool beans"
             for allele in range(1,len(snp)): # if this allele has a frequency > 1/2, loop through the alleles and
 #                print '%s in %s' % (snp[allele],popper)
                 if snp[allele] != value: # check that the allele is the minor allele
@@ -368,215 +408,235 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
                     if snp[allele] in Allowed:
                         if indivs[allele] in Downsampled[snp[0]]:
                             PopKeepCount.update([popper])
+#        else:
+#            print "that's okay; it's half"
 #        print PopKeepCount
-
-
-        index = 1
-        for key in Pop_counts:
-            foo = "store_%s" % str(index)
-#            print foo
-            x = '%s' % str(PopKeepCount[key])
-            exec(foo+"=%s" % x)
-            index+=1
-        if len(Pop_counts)==3:
-            topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
-            if topopulate != '0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==4:
-            topopulate= '%s_%s_%s_%s' % (store_1, store_2, store_3,store_4)
-            if topopulate != '0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==5:
-            topopulate= '%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5)
-            if topopulate != '0_0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==6:
-            topopulate= '%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6)
-            if topopulate != '0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==7:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7)
-            if topopulate != '0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==8:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8)
-            if topopulate != '0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==9:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
-            if topopulate != '0_0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-        if len(Pop_counts)==10:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
-            if topopulate != '0_0_0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=1
-                 Total_Bi_SNPs_used+=1
-                 
-    for snp in Unlink: # loop through snps (columns) in the unlinked group of SNPS
-#        print '\n\n\n'
-#        print 'results from %r:' % snp[0]
-        Allele_Count_2 = Counter() # initialize counter to determine major allele
-        PopKeepCount_2 = Counter() # initialize counter to count alleles in different bins
-        PopKeepCount_3 = Counter() # initialize counter to count alleles in different bins
-        for popid in range(0,len(Pop_counts)): # loop Through the list of populations and make keys with counts of zero for each population
-            PopKeepCount_2[Pop_counts.iloc[popid]] += 0
-            PopKeepCount_3[Pop_counts.iloc[popid]] += 0
-        for population in range(0,len(Pop_counts)): 
-            for allele in range(1,len(snp)): # then loop through the alleles 
-                if Pops[indivs[allele]] == Pop_counts.iloc[population]:
-                    if snp[allele] in Allowed:
-                        if indivs[allele] in Downsampled[snp[0]]:
-                            Allele_Count_2.update(snp[allele])  # update the SNP count
-#        print Allele_Count
-        common_allele = Allele_Count_2.most_common(1)[0][1]
-        value = Allele_Count_2.most_common(1)[0][0] # what is the most common allele
-        total = sum(Allele_Count_2.values())
-        if int(common_allele) == 0.5 * total: 
-            store = list(Allele_Count_2.elements())
-            for item in store:
-                try:
-                    thefirstsnp
-                except NameError:
-                    thefirstsnp = item
-#                    print thefirstsnp
-                else:
-                    if item == thefirstsnp:
-                        thefirstsnp=thefirstsnp
-                    else: 
-                        try:
-                            thesecondsnp
-                        except NameError:
-                            thesecondsnp = item
-#                            print thesecondsnp
-                        else:
-                            thesecondsnp=thesecondsnp
+#
+#
+            index = 1
+            for key in Pop_counts:
+#                print key
+                foo = "store_%s" % str(index)
+#                print foo
+                x = '%s' % str(PopKeepCount[key])
+#                print x
+                exec(foo+"=%s" % x)
+                index+=1
+#                print store_1
+#            print len(Pop_counts)
+            if len(Pop_counts)==2:
+#                print "hells yeah"
+                topopulate= '%s_%s' % (store_1, store_2)
+                if topopulate != '0_0=':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==3:
+#                print "hells yeah"
+                topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
+                if topopulate != '0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==4:
+                topopulate= '%s_%s_%s_%s' % (store_1, store_2, store_3,store_4)
+                if topopulate != '0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==5:
+                topopulate= '%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5)
+                if topopulate != '0_0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==6:
+                topopulate= '%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6)
+                if topopulate != '0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==7:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7)
+                if topopulate != '0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==8:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8)
+                if topopulate != '0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==9:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
+                if topopulate != '0_0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+            if len(Pop_counts)==10:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
+                if topopulate != '0_0_0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=1
+                     Total_Bi_SNPs_used+=1
+        elif int(common_allele) == 0.5 * total:  # is there a common allele
+            #print(int(common_allele))
+            #print "we have a non minor allele"
+#            store = list(Allele_Count.elements())
+#            for item in store:
+#                try:
+#                    thefirstsnp
+#                except NameError:
+#                    thefirstsnp = item
+##                    print thefirstsnp
+#                else:
+#                    if item == thefirstsnp:
+#                        thefirstsnp=thefirstsnp
+#                    else: 
+#                        try:
+#                            thesecondsnp
+#                        except NameError:
+#                            thesecondsnp = item
+##                            print thesecondsnp
+#                        else:
+#                            thesecondsnp=thesecondsnp
+            thefirstsnp = value
+            thesecondsnp = Allele_Count.most_common(2)[1][0]
+#            print common_allele
             for allele in range(1,len(snp)): # if this allele has a frequency > 1/2, loop through the alleles and
 #                print '%s in %s' % (snp[allele],popper)
+                #print(snp[allele])
                 if snp[allele] == thefirstsnp: # check that the allele is the minor allele
                     popper = Pops[indivs[allele]]
                     if snp[allele] in Allowed:
                         if indivs[allele] in Downsampled[snp[0]]:
                             PopKeepCount_2.update([popper])
-                elif snp[allele] == thesecondsnp: # check that the allele is the minor allele
+                if snp[allele] == thesecondsnp: # check that the allele is the minor allele
                     popper = Pops[indivs[allele]]
                     if snp[allele] in Allowed:
                         if indivs[allele] in Downsampled[snp[0]]:
                             PopKeepCount_3.update([popper])
-#        print PopKeepCount_2
-#        print PopKeepCount_3
-        index = 1
-        for key in Pop_counts:
-            foo = "store_%s" % str(index)
-#            print foo
-            x = '%s' % str(PopKeepCount_2[key]/2)
-#            print '%s in %s' % (x, foo)
-            exec(foo+"=%s" % x)
-            index+=1
-        if len(Pop_counts)==3:
-            topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
-            if topopulate != '0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-#                 print 'adding 1/2 to %s' % topopulate
-        if len(Pop_counts)==4:
-            topopulate= '%s_%s_%s_%s' % (store_1, store_2, store_3,store_4)
-            if topopulate != '0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==5:
-            topopulate= '%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5)
-            if topopulate != '0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==6:
-            topopulate= '%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6)
-            if topopulate != '0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==7:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7)
-            if topopulate != '0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==8:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8)
-            if topopulate != '0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==9:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
-            if topopulate != '0_0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==10:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
-            if topopulate != '0_0_0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        index = 1
-        for key in Pop_counts:
-            foo = "store_%s" % str(index)
-#            print foo
-            x = '%s' % str(PopKeepCount_3[key])
-            exec(foo+"=%s" % x)
-            index+=1
-#            print '%s in %s' % (x, foo)
+            #print(PopKeepCount_3)
+            #print(PopKeepCount_2)
+            index = 1
+            for key in Pop_counts:
+                foo = "store_%s" % str(index)
+#                print foo
+                x = '%s' % str(PopKeepCount_2[key])
+#                print x
+                exec(foo+"=%s" % x)
+                index+=1
+#                print store_1
+#            print len(Pop_counts)
+            if len(Pop_counts)==2:
+#                print "hells yeah"
+                topopulate= '%s_%s' % (store_1, store_2)
+#                if topopulate != '0_0_0':
+                AFS_Full[topopulate]+=0.5
+                thehalfSNPs+=0.5
+            if len(Pop_counts)==3:
+#                print "hells yeah"
+                topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
+#                if topopulate != '0_0_0':
+                AFS_Full[topopulate]+=0.5
+                thehalfSNPs+=0.5
+            if len(Pop_counts)==4:
+                topopulate= '%s_%s_%s_%s' % (store_1, store_2, store_3,store_4)
+                #print(topopulate)
+                if topopulate != '0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==5:
+                topopulate= '%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5)
+                if topopulate != '0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==6:
+                topopulate= '%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6)
+                if topopulate != '0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==7:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7)
+                if topopulate != '0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==8:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8)
+                if topopulate != '0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==9:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
+                if topopulate != '0_0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==10:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
+                if topopulate != '0_0_0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            #print "The half count is %r" % thehalfSNPs
+            index = 1
+            for key in Pop_counts:
+#                print key
+                foo = "store_%s" % str(index)
+#                print foo
+                x = '%s' % str(PopKeepCount_3[key])
+#                print x
+                exec(foo+"=%s" % x)
+                index+=1
+#                print store_1
+#            print len(Pop_counts)
+            if len(Pop_counts)==2:
+#                print "hells yeah"
+                topopulate= '%s_%s' % (store_1, store_2)
+#                if topopulate != '0_0_0':
+                AFS_Full[topopulate]+=0.5
+                thehalfSNPs+=0.5
+            if len(Pop_counts)==3:
+#                print "hells yeah"
+                topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
+#                if topopulate != '0_0_0':
+                AFS_Full[topopulate]+=0.5
+                thehalfSNPs+=0.5
+            if len(Pop_counts)==4:
+                topopulate= '%s_%s_%s_%s' % (store_1, store_2, store_3,store_4)
+                #print(topopulate)
+                if topopulate != '0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==5:
+                topopulate= '%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5)
+                if topopulate != '0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==6:
+                topopulate= '%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6)
+                if topopulate != '0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==7:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7)
+                if topopulate != '0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==8:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8)
+                if topopulate != '0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==9:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
+                if topopulate != '0_0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+            if len(Pop_counts)==10:
+                topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
+                if topopulate != '0_0_0_0_0_0_0_0_0_0':
+                     AFS_Full[topopulate]+=0.5
+                     thehalfSNPs+=0.5
+#            print "The full count is %r" % thehalfSNPs
 
-        if len(Pop_counts)==3:
-            topopulate= '%s_%s_%s' % (store_1, store_2, store_3)
-            if topopulate != '0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-#                 print 'adding 1/2 to %s' % topopulate
-        if len(Pop_counts)==4:
-            topopulate= '%s_%s_%s_%s' % (store_1, store_2, store_3,store_4)
-            if topopulate != '0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==5:
-            topopulate= '%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5)
-            if topopulate != '0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==6:
-            topopulate= '%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6)
-            if topopulate != '0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==7:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7)
-            if topopulate != '0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==8:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8)
-            if topopulate != '0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==9:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
-            if topopulate != '0_0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-        if len(Pop_counts)==10:
-            topopulate= '%s_%s_%s_%s_%s_%s_%s_%s_%s_%s' % (store_1, store_2, store_3,store_4,store_5,store_6,store_7,store_8,store_9,store_10)
-            if topopulate != '0_0_0_0_0_0_0_0_0_0':
-                 AFS_Full[topopulate]+=0.5
-                 Total_Bi_SNPs_used+=0.5
-
-
-
+#    print thehalfSNPs
 #    print Total_Bi_SNPs_used
+    Total_Bi_SNPs_used = Total_Bi_SNPs_used + thehalfSNPs
 #    print len(AFS_Full)
     return AFS_Full,Total_Bi_SNPs_used
-
+#
+#create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, Thresholds,Downsampled)
 def totalbp(locus_file):
     """Count total number of sequenced base pairs"""
     print "Counting sequenced basepairs..."
@@ -597,25 +657,39 @@ def totalbp(locus_file):
             if '//' in line:
                 start = True
             else:
-                if start == True and line.startswith(">"):
-                    line = line.strip().split()
-                    #6 takes into account RE site
-                    Count += len(line[1])+6
-                    Loci_count += 1
-                    start = False                
+                if start == True:
+                    if 'A' or 'T' or 'C' or 'G' or 'N' or 'M' or 'R' or 'W' or 'S' or 'Y' or 'K' or 'V' or 'H' or 'B' or 'D' in line:
+                        line = line.strip().split()
+                        #6 takes into account RE site
+                        print line
+                        Count += len(line[1])+6
+                        Loci_count += 1
+                        start = False
+    print Count, Loci_count  
     return Count, Loci_count
 
 def get_mono_cell(locus_file,Count,Loci_count,TotalBi_SNPs_used, TotalSNPs):
     """Determine value to add to [0,0] cell"""
     print "Finding the value for the monomorphic cell..."
     TotalBP = Count
-    Monomorphics = int((TotalBi_SNPs_used * TotalBP) / TotalSNPs) - TotalBi_SNPs_used
+    print TotalBP
+    print TotalSNPs
+    print TotalBi_SNPs_used
+    propsnps = float(TotalBi_SNPs_used) / float(TotalSNPs)
+    print propsnps
+    if popmonomorphic =='True':
+        Monomorphics = int(propsnps*TotalBP) - TotalBi_SNPs_used
+        print 'here are those monomorphs'
+        print Monomorphics
+    elif popmonomorphic == 'False':
+        Monomorphics = 0
     return Monomorphics, \
            TotalBP, Loci_count
 
 def Add_MONOmorphs(locus_file,Monomorphics, AFS_Full):
     print " Populating the monomorphic cell..."
     mono = int(Monomorphics)
+#    print AFS_Full
     key = AFS_Full.keys()[0]
     AFS_Full[key] = mono
     return AFS_Full
@@ -650,6 +724,7 @@ def write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorp
         log.write('\t')
         log.write('Total SNPs Used: %s' % TotalBi_SNPs_used)
         log.write('\n')
+#        print TotalBi_SNPs_used
         log.write('Total BP: %s' % TotalBP)
         log.write('\t')
         AdjustedBP = int(Monomorphics) + int(TotalBi_SNPs_used)
@@ -661,16 +736,20 @@ for rep in range(0,nreps):
     Bi_Thr, indivs, TotalSNPs, length_2 = Biallelic_SNPs(file,Pops,Pop_counts)
     #Unlink = subsample(Bi_Thr,indivs,TotalSNPs,length_2)
     Downsampled = DownSample(Bi_Thr,Bi_Thr, indivs, Pop_counts,Thresholds)
+#    print Pops
+#    print Pop_counts
     AFS_Empty = Empty_AFS(Pops,Pop_counts)
+#    print AFS_Empty
     AFS_Full,TotalBi_SNPs_used = create_AFS(Bi_Thr, indivs, TotalSNPs, length_2, Bi_Thr, AFS_Empty,Pop_counts, Thresholds,Downsampled)
+#    print AFS_Full
     Count, Loci_count = totalbp(locus_file)
     Monomorphics,TotalBP, Loci_count = get_mono_cell(locus_file,Count,Loci_count,TotalBi_SNPs_used, TotalSNPs)
     AFS_Full_Mono = Add_MONOmorphs(locus_file,Monomorphics, AFS_Full)
     with open("Rep" + str(rep) + "_MSFS.obs", 'w') as f:
-#         print Pops
-#         print Pop_counts
-         write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorphics)
-         with open ("Rep" + str(rep) + "_MSFS.obs", 'a') as f: 
+#        print Pops
+#        print Pop_counts
+        write_logfile(rep, Count, Loci_count, TotalBi_SNPs_used, TotalSNPs, Monomorphics)
+        with open ("Rep" + str(rep) + "_MSFS.obs", 'a') as f: 
             f.write('1 observations. No. of demes and sample sizes are on next line')
             f.write('\n')
             f.write(str(len(Pop_counts)))
@@ -680,7 +759,7 @@ for rep in range(0,nreps):
                 f.write(str(Pop_counts[key]))
                 f.write('\t')
             f.write('\n')
-         for bin in AFS_Full_Mono:
+        for bin in AFS_Full_Mono:
             with open("Rep" + str(rep) + "_MSFS.obs", 'a') as f:
                 f.write(str(AFS_Full_Mono[bin]))
                 f.write('\t')
