@@ -394,12 +394,12 @@ def create_AFS(Bi_Thr, indivs, length, length_2, Unlink, AFS_Empty, Pop_counts, 
                     Allele_Count.update(snp[allele])  # update the SNP count'
                 else:
                     print "that's not good"
-        #print Allele_Count
+        nalles = len(Allele_Count.values())
         common_allele = Allele_Count.most_common(1)[0][1] # how many occurrences of the most common allele.
         value = Allele_Count.most_common(1)[0][0] # what is the most common allele
 #        print(Allele_Count)
         total = sum(Allele_Count.values()) # how many alleles are there
-        if int(common_allele) > 0.5 * total:  # is there a common allele
+        if int(common_allele) > 0.5 * total and nalles > 1:  # is there a common allele
 #            print "cool beans"
             for allele in range(1,len(snp)): # if this allele has a frequency > 1/2, loop through the alleles and
 #                print '%s in %s' % (snp[allele],popper)
